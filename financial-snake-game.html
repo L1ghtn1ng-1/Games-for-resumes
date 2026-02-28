@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💰 WALL STREET SNAKE — Financial Frenzy</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     GLOBAL RESET & VARIABLES
+  ============================================================ */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:        #060a0f;
+    --panel:     #0b1220;
+    --border:    #1a2e48;
+    --green:     #00ff88;
+    --green2:    #00c966;
+    --red:       #ff3a5c;
+    --gold:      #ffd700;
+    --cyan:      #00e5ff;
+    --purple:    #b44dff;
+    --orange:    #ff8c00;
+    --dim:       #4a6378;
+    --text:      #c8dce8;
+    --white:     #f0f8ff;
+    --glow-g:    0 0 8px #00ff88, 0 0 20px #00ff8844;
+    --glow-r:    0 0 8px #ff3a5c, 0 0 20px #ff3a5c44;
+    --glow-gold: 0 0 8px #ffd700, 0 0 20px #ffd70066;
+    --glow-c:    0 0 8px #00e5ff, 0 0 20px #00e5ff44;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ============================================================
+     SCANLINE OVERLAY
+  ============================================================ */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.12) 2px,
+      rgba(0,0,0,0.12) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ============================================================
+     ANIMATED BACKGROUND GRID
+  ============================================================ */
+  #bg-grid {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridPulse 8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes gridPulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+  }
+
+  /* ============================================================
+     LAYOUT
+  ============================================================ */
+  #app {
+    position: relative;
+    width: 100vw; height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  #header {
+    text-align: center;
+    line-height: 1;
+  }
+  #header h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(18px, 3vw, 32px);
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: var(--gold);
+    text-shadow: var(--glow-gold);
+    animation: titleFlicker 6s infinite;
+  }
+  #header .subtitle {
+    font-family: 'VT323', monospace;
+    font-size: clamp(14px, 2vw, 22px);
+    color: var(--green);
+    letter-spacing: 3px;
+    text-shadow: var(--glow-g);
+  }
+  @keyframes titleFlicker {
+    0%,95%,100% { opacity: 1; }
+    96%          { opacity: 0.7; }
+    97%          { opacity: 1; }
+    98%          { opacity: 0.5; }
+  }
+
+  /* MAIN GAME AREA */
+  #game-container {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+  }
+
+  /* LEFT PANEL */
+  #left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 190px;
+    flex-shrink: 0;
+  }
+
+  /* RIGHT PANEL */
+  #right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 190px;
+    flex-shrink: 0;
+  }
+
+  /* PANEL CARDS */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.5;
+  }
+  .card-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  /* SCORE CARD */
+  #score-card .score-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: var(--glow-gold);
+    line-height: 1;
+  }
+  #score-card .score-label { font-size: 11px; color: var(--dim); margin-top: 2px; }
+
+  /* PORTFOLIO */
+  #portfolio-card .port-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  #portfolio-card .port-change {
+    font-size: 12px;
+    margin-top: 3px;
+  }
+  .positive { color: var(--green); text-shadow: var(--glow-g); }
+  .negative { color: var(--red);   text-shadow: var(--glow-r); }
+
+  /* HOLDINGS TABLE */
+  .holding-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 3px 0;
+    border-bottom: 1px solid #0f1e30;
+  }
+  .holding-ticker { color: var(--cyan); font-weight: bold; }
+  .holding-qty    { color: var(--dim); }
+  .holding-val    { }
+
+  /* LEVEL / XP */
+  #level-card .level-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--purple);
+    text-shadow: 0 0 12px #b44dff88;
+    line-height: 1;
+  }
+  .xp-bar-bg {
+    height: 6px;
+    background: #0f1e30;
+    border-radius: 3px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .xp-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--purple), var(--cyan));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 6px var(--purple);
+    width: 0%;
+  }
+
+  /* CONTROLS CARD */
+  .ctrl-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 36px);
+    grid-template-rows: repeat(2, 36px);
+    gap: 4px;
+    justify-content: center;
+    margin-top: 4px;
+  }
+  .ctrl-btn {
+    background: #0f1e30;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.1s, box-shadow 0.1s;
+  }
+  .ctrl-btn:active, .ctrl-btn.active {
+    background: #1a2e48;
+    box-shadow: var(--glow-c);
+  }
+  .ctrl-btn.up    { grid-column: 2; grid-row: 1; }
+  .ctrl-btn.left  { grid-column: 1; grid-row: 2; }
+  .ctrl-btn.down  { grid-column: 2; grid-row: 2; }
+  .ctrl-btn.right { grid-column: 3; grid-row: 2; }
+
+  /* NEWS TICKER */
+  #news-card {
+    flex: 1;
+    overflow: hidden;
+  }
+  #news-feed {
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.8;
+  }
+  .news-item {
+    padding: 2px 0;
+    border-bottom: 1px solid #0d1a28;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation: newsIn 0.3s ease;
+  }
+  .news-item .ni-tag { color: var(--gold); margin-right: 4px; }
+  .news-item .ni-up   { color: var(--green); }
+  .news-item .ni-down { color: var(--red); }
+  @keyframes newsIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* MARKET MINI CHART */
+  #market-card canvas {
+    width: 100%;
+    height: 60px;
+    display: block;
+  }
+
+  /* STREAK CARD */
+  #streak-card .streak-val {
+    font-family: 'VT323', monospace;
+    font-size: 42px;
+    color: var(--orange);
+    text-shadow: 0 0 10px #ff8c0088;
+    line-height: 1;
+  }
+  #streak-card .streak-label { font-size: 11px; color: var(--dim); }
+
+  /* ACHIEVEMENTS */
+  #achievements-card .ach-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .ach-badge {
+    font-size: 18px;
+    background: #0f1e30;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    filter: grayscale(1) opacity(0.3);
+    transition: filter 0.4s, box-shadow 0.4s;
+    position: relative;
+    cursor: default;
+  }
+  .ach-badge.unlocked {
+    filter: none;
+    box-shadow: 0 0 8px var(--gold);
+  }
+  .ach-badge:hover .ach-tip {
+    display: block;
+  }
+  .ach-tip {
+    display: none;
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0b1220;
+    border: 1px solid var(--border);
+    color: var(--white);
+    font-size: 10px;
+    padding: 4px 6px;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  /* ============================================================
+     CANVAS / GAME BOARD
+  ============================================================ */
+  #game-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  #game-canvas {
+    display: block;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 0 30px rgba(0,229,255,0.08), inset 0 0 60px rgba(0,0,0,0.6);
+    cursor: none;
+  }
+
+  /* OVERLAY */
+  #overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(6,10,15,0.92);
+    border-radius: 2px;
+    backdrop-filter: blur(3px);
+    z-index: 10;
+  }
+  #overlay h2 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(18px, 3vw, 32px);
+    font-weight: 900;
+    letter-spacing: 4px;
+    margin-bottom: 10px;
+  }
+  #overlay .over-score {
+    font-family: 'VT323', monospace;
+    font-size: clamp(24px, 4vw, 48px);
+    margin-bottom: 4px;
+  }
+  #overlay .over-sub {
+    font-size: 13px;
+    color: var(--dim);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  #btn-start {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    padding: 12px 32px;
+    background: transparent;
+    border: 2px solid var(--green);
+    color: var(--green);
+    text-shadow: var(--glow-g);
+    box-shadow: var(--glow-g);
+    cursor: pointer;
+    border-radius: 2px;
+    text-transform: uppercase;
+    transition: background 0.2s, color 0.2s;
+    animation: btnPulse 2s ease-in-out infinite;
+  }
+  #btn-start:hover {
+    background: var(--green);
+    color: var(--bg);
+    text-shadow: none;
+    animation: none;
+  }
+  @keyframes btnPulse {
+    0%,100% { box-shadow: var(--glow-g); }
+    50%      { box-shadow: 0 0 20px #00ff88, 0 0 50px #00ff8866; }
+  }
+
+  /* PAUSE TEXT */
+  #pause-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    color: var(--cyan);
+    text-shadow: var(--glow-c);
+    letter-spacing: 4px;
+    display: none;
+    z-index: 9;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* FLOATING SCORE */
+  .float-score {
+    position: absolute;
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    pointer-events: none;
+    animation: floatUp 1s ease forwards;
+    z-index: 20;
+  }
+  @keyframes floatUp {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-60px) scale(1.4); }
+  }
+
+  /* BOTTOM BAR */
+  #bottom-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--dim);
+  }
+  #bottom-bar span { letter-spacing: 1px; }
+  #bottom-bar .key {
+    display: inline-block;
+    background: #0f1e30;
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--cyan);
+    font-size: 10px;
+  }
+
+  /* SPEED INDICATOR */
+  #speed-bar {
+    display: flex;
+    gap: 3px;
+    margin-top: 6px;
+  }
+  .spd-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .spd-dot.active {
+    background: var(--green);
+    box-shadow: var(--glow-g);
+  }
+
+  /* COMBO INDICATOR */
+  #combo-display {
+    position: absolute;
+    top: 8px; right: 8px;
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--orange);
+    text-shadow: 0 0 8px var(--orange);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 8;
+  }
+
+  /* MARKET MOOD */
+  #mood-card .mood-icon { font-size: 32px; text-align: center; }
+  #mood-card .mood-label { font-size: 11px; color: var(--dim); text-align: center; margin-top: 2px; }
+
+  /* HIGH SCORE */
+  #hi-card .hi-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--cyan);
+    text-shadow: var(--glow-c);
+  }
+
+  /* FOOD LEGEND */
+  #legend-card { }
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    padding: 2px 0;
+  }
+  .legend-icon { font-size: 16px; width: 20px; text-align: center; }
+  .legend-pts  { color: var(--gold); margin-left: auto; }
+
+  /* ============================================================
+     RESPONSIVE
+  ============================================================ */
+  @media (max-width: 900px) {
+    #left-panel, #right-panel { width: 150px; }
+    .card-title { font-size: 8px; }
+  }
+  @media (max-width: 700px) {
+    #game-container { flex-direction: column; align-items: center; }
+    #left-panel, #right-panel { width: 100%; flex-direction: row; flex-wrap: wrap; }
+    .card { flex: 1 1 140px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="bg-grid"></div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <h1>📈 WALL STREET SNAKE</h1>
+    <div class="subtitle">// FINANCIAL FRENZY v2.0 //</div>
+  </div>
+
+  <!-- MAIN GAME CONTAINER -->
+  <div id="game-container">
+
+    <!-- LEFT PANEL -->
+    <div id="left-panel">
+
+      <!-- SCORE -->
+      <div class="card" id="score-card">
+        <div class="card-title">💵 NET WORTH</div>
+        <div class="score-val" id="score-display">$0</div>
+        <div class="score-label">CURRENT SESSION</div>
+      </div>
+
+      <!-- HIGH SCORE -->
+      <div class="card" id="hi-card">
+        <div class="card-title">🏆 ALL-TIME HIGH</div>
+        <div class="hi-val" id="hi-display">$0</div>
+      </div>
+
+      <!-- LEVEL -->
+      <div class="card" id="level-card">
+        <div class="card-title">⚡ MARKET TIER</div>
+        <div class="level-num" id="level-display">1</div>
+        <div style="font-size:10px; color:var(--dim); margin-top:2px;" id="level-name">PENNY STOCK TRADER</div>
+        <div class="xp-bar-bg">
+          <div class="xp-bar-fill" id="xp-bar"></div>
+        </div>
+        <div style="font-size:10px; color:var(--dim); margin-top:3px;" id="xp-label">XP: 0 / 100</div>
+      </div>
+
+      <!-- PORTFOLIO -->
+      <div class="card" id="portfolio-card">
+        <div class="card-title">📊 PORTFOLIO VALUE</div>
+        <div class="port-val positive" id="port-val">$10,000</div>
+        <div class="port-change positive" id="port-change">▲ +0.00%</div>
+        <div id="holdings-list" style="margin-top:6px;"></div>
+      </div>
+
+      <!-- STREAK -->
+      <div class="card" id="streak-card">
+        <div class="card-title">🔥 EAT STREAK</div>
+        <div class="streak-val" id="streak-display">0</div>
+        <div class="streak-label">CONSECUTIVE PICKS</div>
+      </div>
+
+    </div>
+
+    <!-- CANVAS -->
+    <div id="game-wrap">
+      <canvas id="game-canvas"></canvas>
+      <div id="overlay">
+        <h2 style="color:var(--gold); text-shadow:var(--glow-gold);">WALL STREET<br>SNAKE</h2>
+        <div class="over-score" id="overlay-score" style="color:var(--green);"></div>
+        <div class="over-sub" id="overlay-sub">EAT STOCKS. GROW RICH.<br>AVOID THE BEAR MARKET.</div>
+        <button id="btn-start" onclick="startGame()">▶ ENTER MARKET</button>
+      </div>
+      <div id="pause-text">⏸ PAUSED</div>
+      <div id="combo-display" id="combo-display">x1 COMBO</div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div id="right-panel">
+
+      <!-- MARKET MOOD -->
+      <div class="card" id="mood-card">
+        <div class="card-title">📡 MARKET MOOD</div>
+        <div class="mood-icon" id="mood-icon">😐</div>
+        <div class="mood-label" id="mood-label">NEUTRAL</div>
+      </div>
+
+      <!-- SPEED -->
+      <div class="card">
+        <div class="card-title">🚀 TRADING SPEED</div>
+        <div id="speed-bar">
+          <div class="spd-dot" id="spd1"></div>
+          <div class="spd-dot" id="spd2"></div>
+          <div class="spd-dot" id="spd3"></div>
+          <div class="spd-dot" id="spd4"></div>
+          <div class="spd-dot" id="spd5"></div>
+          <div class="spd-dot" id="spd6"></div>
+          <div class="spd-dot" id="spd7"></div>
+          <div class="spd-dot" id="spd8"></div>
+        </div>
+        <div style="font-size:10px; color:var(--dim); margin-top:4px;" id="speed-label">BEGINNER MODE</div>
+      </div>
+
+      <!-- FOOD LEGEND -->
+      <div class="card" id="legend-card">
+        <div class="card-title">🗂 ASSET TYPES</div>
+        <div class="legend-row"><span class="legend-icon">📈</span><span>STOCK</span><span class="legend-pts">+$100</span></div>
+        <div class="legend-row"><span class="legend-icon">🪙</span><span>CRYPTO</span><span class="legend-pts positive">+$250</span></div>
+        <div class="legend-row"><span class="legend-icon">🥇</span><span>GOLD</span><span class="legend-pts" style="color:var(--gold)">+$500</span></div>
+        <div class="legend-row"><span class="legend-icon">💎</span><span>DIAMOND</span><span class="legend-pts" style="color:var(--cyan)">+$1000</span></div>
+        <div class="legend-row"><span class="legend-icon">🧨</span><span>BOMB</span><span class="legend-pts negative">CRASH!</span></div>
+        <div class="legend-row"><span class="legend-icon">⚡</span><span>BOOST</span><span class="legend-pts" style="color:var(--orange)">SPEED+</span></div>
+        <div class="legend-row"><span class="legend-icon">🍀</span><span>LUCKY</span><span class="legend-pts" style="color:var(--purple)">x2 MULT</span></div>
+      </div>
+
+      <!-- ACHIEVEMENTS -->
+      <div class="card" id="achievements-card">
+        <div class="card-title">🏅 ACHIEVEMENTS</div>
+        <div class="ach-list" id="ach-list">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="card">
+        <div class="card-title">🕹 CONTROLS</div>
+        <div class="ctrl-grid">
+          <div class="ctrl-btn up"    id="cbUp"    onclick="ctrlPress('UP')">▲</div>
+          <div class="ctrl-btn left"  id="cbLeft"  onclick="ctrlPress('LEFT')">◀</div>
+          <div class="ctrl-btn down"  id="cbDown"  onclick="ctrlPress('DOWN')">▼</div>
+          <div class="ctrl-btn right" id="cbRight" onclick="ctrlPress('RIGHT')">▶</div>
+        </div>
+      </div>
+
+      <!-- NEWS -->
+      <div class="card" id="news-card" style="flex:1; min-height:80px;">
+        <div class="card-title">📰 MARKET NEWS</div>
+        <div id="news-feed"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div id="bottom-bar">
+    <span><span class="key">↑↓←→</span> MOVE</span>
+    <span><span class="key">P</span> PAUSE</span>
+    <span><span class="key">R</span> RESTART</span>
+    <span><span class="key">+/-</span> SPEED</span>
+    <span id="fps-display" style="color:var(--dim)">FPS: --</span>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+"use strict";
+
+// ============================================================
+// CONSTANTS & CONFIG
+// ============================================================
+const CELL = 20;
+const COLS = 28;
+const ROWS = 24;
+const W    = COLS * CELL;
+const H    = ROWS * CELL;
+
+const FOOD_TYPES = [
+  { id:'stock',   emoji:'📈', label:'STOCK',   points:100,  color:'#00ff88', rarity:0.45, grow:1 },
+  { id:'crypto',  emoji:'🪙', label:'CRYPTO',  points:250,  color:'#ffd700', rarity:0.25, grow:1 },
+  { id:'gold',    emoji:'🥇', label:'GOLD',    points:500,  color:'#ffd700', rarity:0.13, grow:2 },
+  { id:'diamond', emoji:'💎', label:'DIAMOND', points:1000, color:'#00e5ff', rarity:0.07, grow:3 },
+  { id:'bomb',    emoji:'🧨', label:'BOMB',    points:0,    color:'#ff3a5c', rarity:0.04, grow:0, special:'bomb' },
+  { id:'boost',   emoji:'⚡', label:'BOOST',   points:50,   color:'#ff8c00', rarity:0.04, grow:0, special:'boost' },
+  { id:'lucky',   emoji:'🍀', label:'LUCKY',   points:150,  color:'#b44dff', rarity:0.02, grow:1, special:'lucky' },
+];
+
+const LEVELS = [
+  { min:0,     name:'PENNY STOCK TRADER', color:'#4a6378' },
+  { min:500,   name:'RETAIL INVESTOR',    color:'#00ff88' },
+  { min:1500,  name:'DAY TRADER',         color:'#00e5ff' },
+  { min:4000,  name:'HEDGE FUND ANALYST', color:'#ffd700' },
+  { min:9000,  name:'PORTFOLIO MANAGER',  color:'#ff8c00' },
+  { min:20000, name:'WALL STREET WHALE',  color:'#b44dff' },
+  { min:50000, name:'MARKET TITAN',       color:'#ff3a5c' },
+];
+
+const SPEED_LABELS = ['BEGINNER','LEARNING','STEADY','ACTIVE','FAST','TURBO','ALGO-TRADING'];
+const TICKERS = ['AAPL','GOOG','TSLA','AMZN','MSFT','META','NVDA','BTC','ETH','SPY','GME','DOGE'];
+const NEWS_POOL = [
+  ['🟢','FED HOLDS RATES — MARKETS SURGE'],
+  ['🔴','RECESSION FEARS GRIP WALL STREET'],
+  ['🟢','TECH STOCKS HIT ALL-TIME HIGHS'],
+  ['🔴','CRYPTO WINTER DEEPENS'],
+  ['🟡','GOLD STEADY AMID UNCERTAINTY'],
+  ['🟢','EARNINGS BEAT EXPECTATIONS WIDELY'],
+  ['🔴','INFLATION DATA SPOOKS INVESTORS'],
+  ['🟢','BIOTECH BREAKTHROUGH: SHARES SOAR'],
+  ['🟡','INSIDER TRADING PROBE UNDERWAY'],
+  ['🟢','WARREN BUFFETT BUYS THE DIP'],
+  ['🔴','SHORT SELLERS TARGET MEME STOCKS'],
+  ['🟢','AI BOOM DRIVES NASDAQ RALLY'],
+  ['🔴','BANK FAILURES RATTLE CONFIDENCE'],
+  ['🟢','IPO SEASON HEATS UP'],
+  ['🟡','OPTIONS EXPIRY CREATES VOLATILITY'],
+];
+
+const ACHIEVEMENTS = [
+  { id:'first_eat',   emoji:'🌱', label:'First Trade',     condition: s => s.totalEaten >= 1       },
+  { id:'ten_streak',  emoji:'🔥', label:'Hot Streak x10',  condition: s => s.maxStreak >= 10       },
+  { id:'millionaire', emoji:'💰', label:'Millionaire',     condition: s => s.score >= 1000000      },
+  { id:'crypto_5',    emoji:'🚀', label:'Crypto Whale',    condition: s => s.cryptoEaten >= 5      },
+  { id:'gold_3',      emoji:'🥇', label:'Gold Rush',       condition: s => s.goldEaten >= 3        },
+  { id:'diamond_1',   emoji:'💎', label:'Diamond Hands',   condition: s => s.diamondEaten >= 1     },
+  { id:'no_bomb',     emoji:'💣', label:'Bomb Dodger',     condition: s => s.bombsAvoided >= 20    },
+  { id:'level_5',     emoji:'🏦', label:'Hedge Fund',      condition: s => s.level >= 5            },
+  { id:'speed_6',     emoji:'⚡', label:'HFT Trader',      condition: s => s.maxSpeed >= 6         },
+  { id:'length_30',   emoji:'🐍', label:'Big Snake',       condition: s => s.maxLength >= 30       },
+  { id:'combo_5',     emoji:'🎯', label:'Combo x5',        condition: s => s.maxCombo >= 5         },
+  { id:'lucky_lucky', emoji:'🍀', label:'Lucky Strike',    condition: s => s.luckyEaten >= 1       },
+];
+
+// ============================================================
+// CANVAS SETUP
+// ============================================================
+const canvas = document.getElementById('game-canvas');
+const ctx    = canvas.getContext('2d');
+canvas.width  = W;
+canvas.height = H;
+
+// ============================================================
+// GAME STATE
+// ============================================================
+let state = {};
+let hiScore  = parseInt(localStorage.getItem('wssnake_hi') || '0');
+let achievements = JSON.parse(localStorage.getItem('wssnake_ach') || '{}');
+let running  = false;
+let paused   = false;
+let gameLoop = null;
+let lastTime = 0;
+let accumulator = 0;
+let speedLevel  = 1;
+let frameCount  = 0;
+let fpsTimer    = 0;
+let fps         = 60;
+let multiplier  = 1;
+let multiplierTimer = 0;
+let particles  = [];
+let flashAlpha = 0;
+let flashColor = '#00ff88';
+let marketHistory = Array.from({length:60}, () => Math.random() * 100 + 300);
+let newsTimeout  = null;
+
+function getTickInterval() {
+  // ms between snake moves
+  const base = 200;
+  return Math.max(60, base - (speedLevel - 1) * 22);
+}
+
+function resetState() {
+  state = {
+    snake: [
+      {x: Math.floor(COLS/2), y: Math.floor(ROWS/2)},
+      {x: Math.floor(COLS/2)-1, y: Math.floor(ROWS/2)},
+      {x: Math.floor(COLS/2)-2, y: Math.floor(ROWS/2)},
+    ],
+    dir:     {x:1, y:0},
+    nextDir: {x:1, y:0},
+    foods:   [],
+    score:   0,
+    level:   1,
+    xp:      0,
+    portfolio: 10000,
+    holdings: {},
+    streak:   0,
+    maxStreak:0,
+    combo:    1,
+    maxCombo: 1,
+    totalEaten:    0,
+    cryptoEaten:   0,
+    goldEaten:     0,
+    diamondEaten:  0,
+    luckyEaten:    0,
+    bombsAvoided:  0,
+    maxLength:     3,
+    maxSpeed:      speedLevel,
+    boosted:       false,
+    boostedTimer:  0,
+    lucky:         false,
+    luckyTimer:    0,
+    dead:          false,
+    framesSinceDead: 0,
+  };
+  multiplier = 1;
+  multiplierTimer = 0;
+  particles = [];
+  flashAlpha = 0;
+
+  // Spawn initial food items
+  for (let i = 0; i < 3; i++) spawnFood();
+}
+
+// ============================================================
+// FOOD SPAWNING
+// ============================================================
+function spawnFood() {
+  if (state.foods.length >= 6) return;
+  const roll = Math.random();
+  let cum = 0;
+  let type = FOOD_TYPES[0];
+  for (const ft of FOOD_TYPES) {
+    cum += ft.rarity;
+    if (roll <= cum) { type = ft; break; }
+  }
+  // Find empty cell
+  let pos, tries = 0;
+  do {
+    pos = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)};
+    tries++;
+  } while (tries < 200 && (
+    state.snake.some(s => s.x===pos.x && s.y===pos.y) ||
+    state.foods.some(f => f.x===pos.x && f.y===pos.y)
+  ));
+  state.foods.push({
+    ...pos,
+    type,
+    age: 0,
+    pulse: Math.random()*Math.PI*2,
+    lifespan: type.id === 'bomb' ? 180 : (type.id === 'diamond' ? 200 : 400),
+  });
+}
+
+// ============================================================
+// INPUT
+// ============================================================
+const KEY_MAP = {
+  ArrowUp:'UP', ArrowDown:'DOWN', ArrowLeft:'LEFT', ArrowRight:'RIGHT',
+  KeyW:'UP', KeyS:'DOWN', KeyA:'LEFT', KeyD:'RIGHT',
+};
+document.addEventListener('keydown', e => {
+  const dir = KEY_MAP[e.code];
+  if (dir) {
+    e.preventDefault();
+    changeDir(dir);
+    flashCtrlBtn(dir);
+  }
+  if (e.code === 'KeyP' || e.code === 'Space') { e.preventDefault(); togglePause(); }
+  if (e.code === 'KeyR') restartGame();
+  if (e.code === 'Equal' || e.code === 'NumpadAdd')    { speedLevel = Math.min(8, speedLevel+1); updateSpeedUI(); }
+  if (e.code === 'Minus' || e.code === 'NumpadSubtract'){ speedLevel = Math.max(1, speedLevel-1); updateSpeedUI(); }
+});
+
+function changeDir(dir) {
+  if (!running || paused || state.dead) return;
+  const map = {
+    UP:    {x:0, y:-1},
+    DOWN:  {x:0, y:1},
+    LEFT:  {x:-1, y:0},
+    RIGHT: {x:1, y:0},
+  };
+  const nd = map[dir];
+  // prevent 180
+  if (nd.x === -state.dir.x && nd.y === -state.dir.y) return;
+  state.nextDir = nd;
+}
+
+function ctrlPress(dir) {
+  changeDir(dir);
+  flashCtrlBtn(dir);
+}
+
+function flashCtrlBtn(dir) {
+  const ids = {UP:'cbUp', DOWN:'cbDown', LEFT:'cbLeft', RIGHT:'cbRight'};
+  const btn = document.getElementById(ids[dir]);
+  if (!btn) return;
+  btn.classList.add('active');
+  setTimeout(() => btn.classList.remove('active'), 150);
+}
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+function startLoop() {
+  if (gameLoop) cancelAnimationFrame(gameLoop);
+  lastTime = performance.now();
+  accumulator = 0;
+  gameLoop = requestAnimationFrame(tick);
+}
+
+function tick(now) {
+  if (!running) return;
+  const dt = now - lastTime;
+  lastTime = now;
+
+  // FPS
+  frameCount++;
+  fpsTimer += dt;
+  if (fpsTimer >= 500) {
+    fps = Math.round(frameCount / (fpsTimer/1000));
+    frameCount = 0; fpsTimer = 0;
+    document.getElementById('fps-display').textContent = `FPS: ${fps}`;
+  }
+
+  if (!paused && !state.dead) {
+    accumulator += dt;
+    const interval = getTickInterval();
+    while (accumulator >= interval) {
+      accumulator -= interval;
+      update();
+    }
+  }
+
+  render();
+  gameLoop = requestAnimationFrame(tick);
+}
+
+// ============================================================
+// UPDATE
+// ============================================================
+function update() {
+  if (state.dead) { state.framesSinceDead++; return; }
+
+  // Apply next direction
+  state.dir = state.nextDir;
+
+  // Move head
+  const head = {
+    x: (state.snake[0].x + state.dir.x + COLS) % COLS,
+    y: (state.snake[0].y + state.dir.y + ROWS) % ROWS,
+  };
+
+  // Self collision
+  if (state.snake.some(s => s.x===head.x && s.y===head.y)) {
+    die();
+    return;
+  }
+
+  state.snake.unshift(head);
+
+  // Check food
+  let ate = false;
+  let growCount = 1;
+  for (let i = state.foods.length-1; i >= 0; i--) {
+    const f = state.foods[i];
+    if (f.x === head.x && f.y === head.y) {
+      eatFood(f, head);
+      state.foods.splice(i, 1);
+      ate = true;
+      growCount = f.type.grow;
+      break;
+    }
+  }
+
+  // Trim tail (unless growing)
+  if (!ate || growCount === 0) {
+    state.snake.pop();
+  } else {
+    // grow extra segments
+    for (let g = 1; g < growCount; g++) {
+      state.snake.push({...state.snake[state.snake.length-1]});
+    }
+  }
+
+  if (!ate) {
+    state.streak = 0;
+    state.combo = 1;
+  }
+
+  // Bombs avoided tracking
+  state.foods.forEach(f => { if (f.type.id === 'bomb') {} });
+
+  // Age foods / expire
+  state.foods.forEach(f => f.age++);
+  const before = state.foods.length;
+  state.foods = state.foods.filter(f => f.age < f.lifespan);
+  const after = state.foods.length;
+  // Count avoided bombs
+  for (let i = 0; i < before - after; i++) state.bombsAvoided++;
+
+  // Spawn food
+  if (Math.random() < 0.15) spawnFood();
+  if (state.foods.length < 2) spawnFood();
+
+  // Multiplier timer
+  if (multiplierTimer > 0) {
+    multiplierTimer--;
+    if (multiplierTimer === 0) multiplier = 1;
+  }
+
+  // Boosted timer
+  if (state.boostedTimer > 0) {
+    state.boostedTimer--;
+    if (state.boostedTimer === 0) state.boosted = false;
+  }
+
+  // Lucky timer
+  if (state.luckyTimer > 0) {
+    state.luckyTimer--;
+    if (state.luckyTimer === 0) { state.lucky = false; multiplier = 1; multiplierTimer = 0; }
+  }
+
+  // Update market history
+  const last = marketHistory[marketHistory.length-1];
+  marketHistory.push(last + (Math.random()-0.48)*8);
+  if (marketHistory.length > 60) marketHistory.shift();
+
+  // Update max tracking
+  state.maxLength = Math.max(state.maxLength, state.snake.length);
+  state.maxSpeed  = Math.max(state.maxSpeed, speedLevel);
+
+  // Particle update
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.3;
+    p.life--;
+    p.vx *= 0.97;
+  });
+
+  // Flash decay
+  if (flashAlpha > 0) flashAlpha -= 0.06;
+
+  // Update UI
+  updateUI();
+  checkAchievements();
+}
+
+// ============================================================
+// EAT FOOD
+// ============================================================
+function eatFood(f, head) {
+  const ft = f.type;
+  state.totalEaten++;
+  state.streak++;
+  state.maxStreak = Math.max(state.maxStreak, state.streak);
+  state.combo = Math.min(10, state.combo + 1);
+  state.maxCombo = Math.max(state.maxCombo, state.combo);
+
+  // Special effects
+  if (ft.special === 'bomb') {
+    die();
+    return;
+  }
+  if (ft.special === 'boost') {
+    state.boosted = true;
+    state.boostedTimer = 80;
+    speedLevel = Math.min(8, speedLevel + 2);
+    updateSpeedUI();
+    flashScreen('#ff8c00', 0.4);
+    addNews('⚡','SPEED BOOST ACTIVATED — TURBO MODE!');
+    spawnParticles(head.x*CELL+CELL/2, head.y*CELL+CELL/2, '#ff8c00', 20);
+    return;
+  }
+  if (ft.special === 'lucky') {
+    state.lucky = true;
+    state.luckyTimer = 120;
+    multiplier = 2;
+    multiplierTimer = 120;
+    state.luckyEaten++;
+    flashScreen('#b44dff', 0.4);
+    addNews('🍀','LUCKY CLOVER! x2 MULTIPLIER ACTIVE');
+    spawnParticles(head.x*CELL+CELL/2, head.y*CELL+CELL/2, '#b44dff', 20);
+  }
+
+  // Points
+  const pts = ft.points * multiplier * state.combo;
+  state.score += pts;
+  state.xp    += Math.ceil(ft.points / 10);
+
+  // Holdings
+  if (!state.holdings[ft.label]) state.holdings[ft.label] = {qty:0, val:0};
+  state.holdings[ft.label].qty++;
+  state.holdings[ft.label].val += ft.points;
+  state.portfolio += pts;
+
+  // Type tracking
+  if (ft.id === 'crypto')  state.cryptoEaten++;
+  if (ft.id === 'gold')    state.goldEaten++;
+  if (ft.id === 'diamond') state.diamondEaten++;
+
+  // Level up
+  checkLevel();
+
+  // Flash
+  flashScreen(ft.color, 0.3);
+
+  // Particles
+  spawnParticles(head.x*CELL+CELL/2, head.y*CELL+CELL/2, ft.color, 30);
+
+  // Floating text
+  spawnFloatText(head.x*CELL, head.y*CELL, `+$${pts.toLocaleString()}`, ft.color);
+
+  // Update hi score
+  if (state.score > hiScore) {
+    hiScore = state.score;
+    localStorage.setItem('wssnake_hi', hiScore);
+    document.getElementById('hi-display').textContent = '$'+hiScore.toLocaleString();
+  }
+
+  // News
+  const newsItems = {
+    stock:   [`📈 ${TICKERS[Math.floor(Math.random()*TICKERS.length)]} UP +${(Math.random()*10+1).toFixed(1)}% — BUY SIGNAL`, true],
+    crypto:  [`🪙 BTC PUMPING — ${(Math.random()*15+5).toFixed(1)}% GAINS TODAY`, true],
+    gold:    [`🥇 GOLD RALLY: SAFE HAVEN DEMAND SURGES`, true],
+    diamond: [`💎 RARE GEM ACQUIRED — DIAMOND HANDS CONFIRMED`, true],
+    lucky:   [`🍀 FORTUNE SMILES — MULTIPLIER ACTIVE`, true],
+  };
+  if (newsItems[ft.id]) addNews(...newsItems[ft.id]);
+}
+
+function die() {
+  state.dead = true;
+  flashScreen('#ff3a5c', 0.8);
+  addNews('🔴', 'MARKET CRASH — PORTFOLIO LIQUIDATED');
+  setTimeout(showGameOver, 1500);
+}
+
+// ============================================================
+// LEVEL CHECK
+// ============================================================
+function checkLevel() {
+  const xpNeeded = state.level * 100;
+  if (state.xp >= xpNeeded) {
+    state.xp -= xpNeeded;
+    state.level++;
+    flashScreen('#b44dff', 0.5);
+    addNews('⬆️', `LEVEL UP! NOW: ${getLevelInfo(state.level).name}`);
+  }
+}
+
+function getLevelInfo(lv) {
+  let info = LEVELS[0];
+  for (const l of LEVELS) {
+    if (state.score >= l.min) info = l;
+  }
+  return info;
+}
+
+// ============================================================
+// PARTICLES & FLOATING TEXT
+// ============================================================
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 4 + 1;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      color,
+      life: 30 + Math.random()*20,
+      size: Math.random()*4+2,
+    });
+  }
+}
+
+function spawnFloatText(x, y, text, color) {
+  const el = document.createElement('div');
+  el.className = 'float-score';
+  el.style.left  = (canvas.offsetLeft + x) + 'px';
+  el.style.top   = (canvas.offsetTop  + y) + 'px';
+  el.style.color = color;
+  el.style.textShadow = `0 0 8px ${color}`;
+  el.textContent = text;
+  document.getElementById('game-wrap').appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+function flashScreen(color, alpha) {
+  flashColor = color;
+  flashAlpha = alpha;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.fillStyle = '#060a0f';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(26,46,72,0.5)';
+  ctx.lineWidth = 0.5;
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c*CELL,0); ctx.lineTo(c*CELL,H); ctx.stroke();
+  }
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0,r*CELL); ctx.lineTo(W,r*CELL); ctx.stroke();
+  }
+
+  // Draw foods
+  state.foods.forEach(f => drawFood(f));
+
+  // Draw snake
+  drawSnake();
+
+  // Particles
+  particles.forEach(p => {
+    ctx.globalAlpha = p.life / 50;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Flash overlay
+  if (flashAlpha > 0) {
+    ctx.fillStyle = flashColor;
+    ctx.globalAlpha = flashAlpha;
+    ctx.fillRect(0,0,W,H);
+    ctx.globalAlpha = 1;
+  }
+
+  // Death animation
+  if (state.dead) {
+    const t = Math.min(1, state.framesSinceDead / 30);
+    ctx.fillStyle = `rgba(255,58,92,${t*0.4})`;
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+function drawSnake() {
+  const len = state.snake.length;
+  state.snake.forEach((seg, i) => {
+    const t = i / len;
+    const isHead = i === 0;
+    const px = seg.x * CELL;
+    const py = seg.y * CELL;
+    const pad = isHead ? 1 : 2;
+
+    // Gradient color along body
+    let r = Math.round(0 + t * 20);
+    let g = Math.round(255 - t * 100);
+    let b = Math.round(136 - t * 50);
+
+    if (state.lucky) {
+      r = Math.round(100 + Math.sin(Date.now()*0.01+i)*80);
+      g = Math.round(80);
+      b = Math.round(200 + Math.sin(Date.now()*0.01+i+2)*55);
+    }
+    if (state.boosted) {
+      r = 255; g = Math.round(150 - t*100); b = 0;
+    }
+
+    const color = `rgb(${r},${g},${b})`;
+
+    // Glow for head
+    if (isHead) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur  = 15;
+    } else {
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = color;
+    }
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(px+pad, py+pad, CELL-pad*2, CELL-pad*2, isHead ? 4 : 3);
+    ctx.fill();
+
+    // Head eyes
+    if (isHead) {
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#000';
+      const ex = state.dir.x !== 0 ? (state.dir.x > 0 ? 12 : 4) : 5;
+      const ey = state.dir.y !== 0 ? (state.dir.y > 0 ? 12 : 4) : 5;
+      ctx.beginPath(); ctx.arc(px+ex,   py+ey,   2.5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+ex+4*(state.dir.x===0?1:0), py+ey+4*(state.dir.y===0?1:0), 2.5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(px+ex+0.5, py+ey+0.5, 1, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+ex+4*(state.dir.x===0?1:0)+0.5, py+ey+4*(state.dir.y===0?1:0)+0.5, 1, 0, Math.PI*2); ctx.fill();
+    }
+  });
+  ctx.shadowBlur = 0;
+}
+
+function drawFood(f) {
+  f.pulse += 0.12;
+  const scale = 1 + Math.sin(f.pulse) * 0.1;
+  const px = f.x * CELL + CELL/2;
+  const py = f.y * CELL + CELL/2;
+  const size = CELL * 0.8 * scale;
+
+  // Expiry pulse (flash when close to expiring)
+  const lifeRatio = f.age / f.lifespan;
+  if (lifeRatio > 0.7) {
+    ctx.globalAlpha = 1 - (lifeRatio - 0.7) / 0.3 * 0.5 + 0.5;
+  }
+
+  // Glow ring
+  ctx.save();
+  ctx.globalAlpha *= 0.6;
+  ctx.shadowColor = f.type.color;
+  ctx.shadowBlur  = 12;
+  ctx.fillStyle   = f.type.color + '33';
+  ctx.beginPath();
+  ctx.arc(px, py, size/1.5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  // Emoji
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, ctx.globalAlpha);
+  ctx.font = `${size * 0.9}px serif`;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(f.type.emoji, px, py);
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+// ============================================================
+// UI UPDATES
+// ============================================================
+function updateUI() {
+  // Score
+  document.getElementById('score-display').textContent = '$' + state.score.toLocaleString();
+
+  // Portfolio
+  const pct = ((state.portfolio - 10000) / 10000 * 100).toFixed(2);
+  const portEl = document.getElementById('port-val');
+  portEl.textContent = '$' + state.portfolio.toLocaleString();
+  portEl.className = 'port-val ' + (state.portfolio >= 10000 ? 'positive' : 'negative');
+
+  const chEl = document.getElementById('port-change');
+  const sign = pct >= 0 ? '▲ +' : '▼ ';
+  chEl.textContent  = sign + pct + '%';
+  chEl.className    = 'port-change ' + (pct >= 0 ? 'positive' : 'negative');
+
+  // Holdings
+  const hl = document.getElementById('holdings-list');
+  hl.innerHTML = '';
+  Object.entries(state.holdings).slice(-3).forEach(([k,v]) => {
+    const row = document.createElement('div');
+    row.className = 'holding-row';
+    row.innerHTML = `<span class="holding-ticker">${k.slice(0,4)}</span><span class="holding-qty">x${v.qty}</span><span class="holding-val ${v.val>=0?'positive':'negative'}">$${v.val.toLocaleString()}</span>`;
+    hl.appendChild(row);
+  });
+
+  // Level
+  const li = getLevelInfo(state.level);
+  document.getElementById('level-display').textContent = state.level;
+  document.getElementById('level-display').style.color = li.color;
+  document.getElementById('level-name').textContent = li.name;
+
+  const xpNeeded = state.level * 100;
+  const xpPct = Math.min(100, state.xp / xpNeeded * 100);
+  document.getElementById('xp-bar').style.width = xpPct + '%';
+  document.getElementById('xp-label').textContent = `XP: ${state.xp} / ${xpNeeded}`;
+
+  // Streak
+  document.getElementById('streak-display').textContent = state.streak;
+
+  // Hi score
+  document.getElementById('hi-display').textContent = '$' + hiScore.toLocaleString();
+
+  // Speed
+  updateSpeedUI();
+
+  // Mood
+  updateMood();
+
+  // Combo display
+  const comboEl = document.getElementById('combo-display');
+  if (state.combo > 1) {
+    comboEl.style.opacity = 1;
+    comboEl.textContent = `x${state.combo} COMBO!`;
+    comboEl.style.color = state.combo >= 5 ? '#ff3a5c' : state.combo >= 3 ? '#ffd700' : '#ff8c00';
+  } else {
+    comboEl.style.opacity = 0;
+  }
+
+  // Market chart
+  drawMarketChart();
+}
+
+function updateSpeedUI() {
+  for (let i = 1; i <= 8; i++) {
+    const dot = document.getElementById(`spd${i}`);
+    if (dot) dot.className = 'spd-dot' + (i <= speedLevel ? ' active' : '');
+  }
+  const label = SPEED_LABELS[Math.min(speedLevel-1, SPEED_LABELS.length-1)];
+  document.getElementById('speed-label').textContent = label;
+}
+
+function updateMood() {
+  const last5 = marketHistory.slice(-5);
+  const trend = last5[last5.length-1] - last5[0];
+  let icon, label;
+  if (trend > 20)      { icon='🚀'; label='BULL RUN'; }
+  else if (trend > 5)  { icon='😊'; label='BULLISH'; }
+  else if (trend > -5) { icon='😐'; label='NEUTRAL'; }
+  else if (trend > -20){ icon='😟'; label='BEARISH'; }
+  else                  { icon='💀'; label='BEAR MARKET'; }
+  document.getElementById('mood-icon').textContent  = icon;
+  document.getElementById('mood-label').textContent = label;
+}
+
+function drawMarketChart() {
+  const card = document.getElementById('market-card');
+  if (!card) return;
+  let cv = card.querySelector('canvas');
+  if (!cv) {
+    cv = document.createElement('canvas');
+    cv.style.width  = '100%';
+    cv.style.height = '60px';
+    card.appendChild(cv);
+  }
+  const cw = card.clientWidth - 24;
+  cv.width  = cw;
+  cv.height = 60;
+  const cx  = cv.getContext('2d');
+  const data = marketHistory;
+  const min  = Math.min(...data);
+  const max  = Math.max(...data);
+  const rng  = max - min || 1;
+
+  cx.clearRect(0,0,cw,60);
+
+  // Gradient fill
+  const grad = cx.createLinearGradient(0,0,0,60);
+  grad.addColorStop(0, 'rgba(0,255,136,0.3)');
+  grad.addColorStop(1, 'rgba(0,255,136,0)');
+
+  cx.beginPath();
+  data.forEach((v,i) => {
+    const x = i / (data.length-1) * cw;
+    const y = 60 - (v-min)/rng * 55 - 2;
+    i === 0 ? cx.moveTo(x,y) : cx.lineTo(x,y);
+  });
+  const lastX = cw;
+  const lastY = 60 - (data[data.length-1]-min)/rng * 55 - 2;
+  cx.lineTo(lastX, 60); cx.lineTo(0,60); cx.closePath();
+  cx.fillStyle = grad;
+  cx.fill();
+
+  // Line
+  cx.beginPath();
+  data.forEach((v,i) => {
+    const x = i / (data.length-1) * cw;
+    const y = 60 - (v-min)/rng * 55 - 2;
+    i === 0 ? cx.moveTo(x,y) : cx.lineTo(x,y);
+  });
+  const recent = data[data.length-1] - data[0];
+  cx.strokeStyle = recent >= 0 ? '#00ff88' : '#ff3a5c';
+  cx.lineWidth   = 2;
+  cx.shadowColor = cx.strokeStyle;
+  cx.shadowBlur  = 6;
+  cx.stroke();
+  cx.shadowBlur  = 0;
+
+  // Dot at end
+  cx.fillStyle = cx.strokeStyle;
+  cx.beginPath();
+  cx.arc(lastX-1, lastY, 3, 0, Math.PI*2);
+  cx.fill();
+}
+
+// ============================================================
+// ACHIEVEMENTS
+// ============================================================
+function checkAchievements() {
+  ACHIEVEMENTS.forEach(ach => {
+    if (achievements[ach.id]) return;
+    if (ach.condition(state)) {
+      achievements[ach.id] = true;
+      localStorage.setItem('wssnake_ach', JSON.stringify(achievements));
+      renderAchievements();
+      addNews('🏅', `ACHIEVEMENT UNLOCKED: ${ach.label}`);
+      flashScreen('#ffd700', 0.3);
+    }
+  });
+}
+
+function renderAchievements() {
+  const list = document.getElementById('ach-list');
+  list.innerHTML = '';
+  ACHIEVEMENTS.forEach(ach => {
+    const el = document.createElement('div');
+    el.className = 'ach-badge' + (achievements[ach.id] ? ' unlocked' : '');
+    el.innerHTML = `${ach.emoji}<span class="ach-tip">${ach.label}</span>`;
+    list.appendChild(el);
+  });
+}
+
+// ============================================================
+// NEWS
+// ============================================================
+function addNews(icon, text) {
+  const feed = document.getElementById('news-feed');
+  const item = document.createElement('div');
+  item.className = 'news-item';
+  const isUp   = icon === '🟢' || icon === '📈' || icon === '⬆️';
+  const isDown = icon === '🔴' || icon === '📉';
+  item.innerHTML = `<span class="ni-tag">${icon}</span><span class="${isUp?'ni-up':isDown?'ni-down':''}">${text}</span>`;
+  feed.insertBefore(item, feed.firstChild);
+  // Keep max 7
+  while (feed.children.length > 7) feed.removeChild(feed.lastChild);
+}
+
+function startNewsTimer() {
+  if (newsTimeout) clearTimeout(newsTimeout);
+  function tick() {
+    const n = NEWS_POOL[Math.floor(Math.random()*NEWS_POOL.length)];
+    addNews(n[0], n[1]);
+    newsTimeout = setTimeout(tick, 4000 + Math.random()*5000);
+  }
+  newsTimeout = setTimeout(tick, 2000);
+}
+
+// ============================================================
+// GAME CONTROL
+// ============================================================
+function startGame() {
+  speedLevel = 1;
+  updateSpeedUI();
+  resetState();
+  running = true;
+  paused  = false;
+  document.getElementById('overlay').style.display = 'none';
+  renderAchievements();
+  startNewsTimer();
+  startLoop();
+  updateUI();
+}
+
+function showGameOver() {
+  running = false;
+  const ov = document.getElementById('overlay');
+  ov.style.display = 'flex';
+  ov.querySelector('h2').style.color = '#ff3a5c';
+  ov.querySelector('h2').style.textShadow = '0 0 10px #ff3a5c';
+  ov.querySelector('h2').textContent = 'MARKET\nCRASHED';
+  document.getElementById('overlay-score').textContent = '$' + state.score.toLocaleString();
+  document.getElementById('overlay-score').style.color = '#ffd700';
+  document.getElementById('overlay-sub').innerHTML =
+    `LENGTH: ${state.snake.length} | STREAK: ${state.maxStreak}<br>BEST: $${hiScore.toLocaleString()}`;
+  document.getElementById('btn-start').textContent = '▶ TRADE AGAIN';
+}
+
+function restartGame() {
+  if (running) { startGame(); }
+}
+
+function togglePause() {
+  if (!running) return;
+  paused = !paused;
+  document.getElementById('pause-text').style.display = paused ? 'block' : 'none';
+}
+
+// ============================================================
+// TOUCH SUPPORT
+// ============================================================
+let touchStart = null;
+canvas.addEventListener('touchstart', e => {
+  touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+}, {passive:true});
+canvas.addEventListener('touchend', e => {
+  if (!touchStart) return;
+  const dx = e.changedTouches[0].clientX - touchStart.x;
+  const dy = e.changedTouches[0].clientY - touchStart.y;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    changeDir(dx > 0 ? 'RIGHT' : 'LEFT');
+  } else {
+    changeDir(dy > 0 ? 'DOWN' : 'UP');
+  }
+  touchStart = null;
+}, {passive:true});
+
+// ============================================================
+// INIT
+// ============================================================
+document.getElementById('hi-display').textContent = '$' + hiScore.toLocaleString();
+
+// Build market card
+const mc = document.createElement('div');
+mc.className = 'card';
+mc.id = 'market-card';
+mc.innerHTML = '<div class="card-title">📉 LIVE MARKET</div>';
+document.getElementById('right-panel').insertBefore(mc, document.getElementById('right-panel').firstChild);
+
+renderAchievements();
+updateSpeedUI();
+addNews('🟡','WELCOME TO WALL STREET SNAKE — ENTER THE MARKET!');
+
+// Start news even before game
+startNewsTimer();
+
+// Draw idle state
+resetState();
+render();
+
+</script>
+</body>
+</html>
